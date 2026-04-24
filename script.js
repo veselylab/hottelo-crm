@@ -1,10 +1,10 @@
 const STAGES=[
-  {id:1275,label:"Kontaktovat",sub:"Nové leady",dot:"#6b7280",accent:"#9ca3af"},
-  {id:1276,label:"Kontaktováno",sub:"V dialogu",dot:"#3b82f6",accent:"#60a5fa"},
-  {id:1277,label:"Má zájem",sub:"Zájem potvrzen",dot:"#f59e0b",accent:"#fbbf24"},
-  {id:1278,label:"Nabídka zaslána",sub:"Čeká na rozhodnutí",dot:"#8b5cf6",accent:"#a78bfa"},
-  {id:1279,label:"✦ Vyhráli jsme",sub:"Uzavřeno",dot:"#c9a84c",accent:"#e5c97e"},
-  {id:1280,label:"Prohráli jsme",sub:"Archived",dot:"#374151",accent:"#4b5563",muted:true},
+  {id:1275,label:"Kontaktovat",sub:"Nové leady",dot:"#94a3b8",accent:"#475569"},
+  {id:1276,label:"Kontaktováno",sub:"V dialogu",dot:"#3b82f6",accent:"#1d4ed8"},
+  {id:1277,label:"Má zájem",sub:"Zájem potvrzen",dot:"#f59e0b",accent:"#b45309"},
+  {id:1278,label:"Nabídka zaslána",sub:"Čeká na rozhodnutí",dot:"#8b5cf6",accent:"#6d28d9"},
+  {id:1279,label:"✦ Vyhráli jsme",sub:"Uzavřeno",dot:"#a07820",accent:"#7a5c10"},
+  {id:1280,label:"Prohráli jsme",sub:"Archived",dot:"#cbd5e1",accent:"#94a3b8",muted:true},
 ];
 
 const DATA=[
@@ -22,21 +22,15 @@ let expanded={};
 
 const czk=v=>new Intl.NumberFormat("cs-CZ",{style:"currency",currency:"CZK",maximumFractionDigits:0}).format(v);
 const stars=n=>"★".repeat(n)+"☆".repeat(5-n);
+const BADGE={vip:["#fef3d0","#7a5c10","VIP"],high:["#fee2e2","#991b1b","HIGH"],medium:["#f1f0eb","#6b6958","—"],won:["#dcfce7","#166534","WON"]};
 
-const BADGE={vip:["#c9a84c","#1a1206","VIP"],high:["#ef4444","#1a0606","HIGH"],medium:["#6b7280","#111","—"],won:["#22c55e","#061a0a","WON"]};
-
-function setFilter(f,btn){
-  filter=f;
-  document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  render();
-}
+function setFilter(f,btn){filter=f;document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));btn.classList.add("active");render();}
 
 function move(id,toStageId){
   const c=contacts.find(x=>x.id===id);
   const s=STAGES.find(x=>x.id===toStageId);
   contacts=contacts.map(x=>x.id===id?{...x,stageId:toStageId}:x);
-  notify(`${c.name} → ${s.label.replace("✦ ","")}`);
+  notify(`${c.name} přesunut → ${s.label.replace("✦ ","")}`);
   render();
 }
 
@@ -54,8 +48,6 @@ function render(){
     const mf=filter==="all"||(filter==="vip"&&c.vip)||(filter==="high"&&(c.priority==="high"||c.priority==="vip"));
     return ms&&mf;
   });
-
-  // stats
   const pipeline=contacts.filter(c=>c.stageId!==1279&&c.stageId!==1280).reduce((s,c)=>s+c.value,0);
   const won=contacts.filter(c=>c.stageId===1279).reduce((s,c)=>s+c.value,0);
   const wonCount=contacts.filter(c=>c.stageId===1279).length;
@@ -66,20 +58,17 @@ function render(){
 
   const board=document.getElementById("board");
   board.innerHTML="";
-
   STAGES.forEach(stage=>{
     const sc=visible.filter(c=>c.stageId===stage.id);
     const sv=sc.reduce((s,c)=>s+c.value,0);
-
     const col=document.createElement("div");
     col.className="column";
-    if(stage.muted)col.style.opacity=".6";
-
+    if(stage.muted)col.style.opacity=".5";
     col.innerHTML=`
       <div class="col-header" style="--col-dot:${stage.dot}">
         <div class="col-title" style="color:${stage.accent}">
           ${stage.label}
-          <div class="col-count" style="background:${stage.dot}22;border:1px solid ${stage.dot}44;color:${stage.accent}">${sc.length}</div>
+          <div class="col-count" style="background:${stage.dot}22;border:1px solid ${stage.dot}55;color:${stage.accent}">${sc.length}</div>
         </div>
         <div class="col-sub">${stage.sub}</div>
         ${sc.length>0?`<div class="col-value" style="color:${stage.dot}">${czk(sv)}</div>`:""}
@@ -89,7 +78,8 @@ function render(){
         ${sc.map(c=>{
           const [bg,fg,label]=BADGE[c.priority]||BADGE.medium;
           const isOpen=expanded[c.id];
-          return`<div class="card${c.vip?" vip":""}" style="--card-accent:${STAGES.find(s=>s.id===c.stageId)?.dot||"#333"}" onclick="toggle(${c.id})">
+          const dot=STAGES.find(s=>s.id===c.stageId)?.dot||"#ccc";
+          return`<div class="card${c.vip?" vip":""}" style="--card-accent:${dot}" onclick="toggle(${c.id})">
             <div class="card-top">
               <div>
                 <div class="card-name">${c.name}</div>
@@ -107,9 +97,9 @@ function render(){
               </div>
               <div class="detail-note">${c.note}</div>
               <div class="detail-contact">✉ ${c.email}</div>
-              <div class="detail-contact">☎ ${c.phone}</div>
+              <div class="detail-contact" style="margin-bottom:10px">☎ ${c.phone}</div>
               <div class="move-btns">
-                ${STAGES.filter(s=>s.id!==c.stageId&&!s.muted).map(s=>`<button class="move-btn" style="border:1px solid ${s.dot}55;color:${s.accent}" onmouseenter="this.style.background='${s.dot}22'" onmouseleave="this.style.background='transparent'" onclick="event.stopPropagation();move(${c.id},${s.id})">→ ${s.label.replace("✦ ","")}</button>`).join("")}
+                ${STAGES.filter(s=>s.id!==c.stageId&&!s.muted).map(s=>`<button class="move-btn" style="border:1px solid ${s.dot};color:${s.accent}" onmouseenter="this.style.background='${s.dot}18'" onmouseleave="this.style.background='#fff'" onclick="event.stopPropagation();move(${c.id},${s.id})">→ ${s.label.replace("✦ ","")}</button>`).join("")}
               </div>
             </div>
           </div>`;
